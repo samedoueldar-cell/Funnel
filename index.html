@@ -1,1 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Get Instant Access</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --ink:    #0f0e0d;
+      --paper:  #f5f2ed;
+      --cream:  #ede9e2;
+      --accent: #c8472b;
+      --muted:  #7a756e;
+      --border: #d4cfc7;
+      --radius: 2px;
+    }
+
+    html, body { height: 100%; background: var(--paper); color: var(--ink);
+      font-family: 'DM Sans', sans-serif; font-weight: 300; -webkit-font-smoothing: antialiased; }
+
+    body { display: grid; place-items: center; min-height: 100vh; padding: 2rem; }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    .card {
+      position: relative; z-index: 1;
+      background: #fff; border: 1px solid var(--border);
+      max-width: 460px; width: 100%;
+      padding: 3rem 3rem 2.5rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 40px rgba(0,0,0,.06);
+      animation: rise .6s cubic-bezier(.16,1,.3,1) both;
+    }
+
+    @keyframes rise { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+
+    .eyebrow {
+      font-size: .68rem; font-weight: 500; letter-spacing: .18em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 1.1rem;
+    }
+
+    h1 { font-family: 'Playfair Display', serif; font-size: clamp(1.75rem,4vw,2.1rem);
+      font-weight: 700; line-height: 1.18; margin-bottom: .75rem; letter-spacing: -.01em; }
+    h1 em { font-style: italic; color: var(--accent); }
+
+    .subtext { font-size: .9rem; color: var(--muted); line-height: 1.65; margin-bottom: 2rem; }
+
+    .divider { height: 1px; background: var(--border); margin-bottom: 2rem; }
+
+    .price-badge {
+      display: inline-flex; align-items: baseline; gap: .3rem;
+      background: var(--cream); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .35rem .75rem; margin-bottom: 1.5rem;
+    }
+    .price-badge .amount { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; }
+    .price-badge .currency { font-size: .78rem; font-weight: 500; color: var(--muted); letter-spacing: .05em; }
+
+    .field { margin-bottom: 1.25rem; }
+
+    label { display: block; font-size: .75rem; font-weight: 500; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: .45rem; }
+
+    input {
+      display: block; width: 100%; padding: .78rem 1rem;
+      font-family: 'DM Sans', sans-serif; font-size: .95rem; font-weight: 300;
+      color: var(--ink); background: var(--paper); border: 1px solid var(--border);
+      border-radius: var(--radius); outline: none;
+      transition: border-color .15s, box-shadow .15s; -webkit-appearance: none;
+    }
+    input:focus { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(15,14,13,.06); }
+    input::placeholder { color: #b5b0a9; }
+
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: .6rem;
+      width: 100%; margin-top: 1.75rem; padding: .9rem 1.5rem;
+      background: var(--ink); color: #fff;
+      font-family: 'DM Sans', sans-serif; font-size: .88rem; font-weight: 500;
+      letter-spacing: .06em; text-transform: uppercase;
+      border: none; border-radius: var(--radius); cursor: pointer;
+      transition: background .15s, transform .1s; overflow: hidden;
+    }
+    .btn:hover  { background: #2a2825; }
+    .btn:active { transform: scale(.99); }
+    .btn:disabled { background: #c5c0b8; cursor: not-allowed; transform: none; }
+    .btn:not(:disabled):hover .arrow { transform: translateX(3px); }
+    .arrow { transition: transform .2s; }
+
+    .spinner {
+      display: none; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+      border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn.loading .spinner  { display: block; }
+    .btn.loading .btn-label,
+    .btn.loading .arrow    { display: none; }
+
+    .error-msg {
+      display: none; margin-top: 1rem; padding: .75rem 1rem;
+      background: #fef2f0; border: 1px solid #f5c6bc;
+      border-radius: var(--radius); font-size: .85rem; color: var(--accent);
+    }
+    .error-msg.visible { display: block; }
+
+    .trust { margin-top: 1.75rem; display: flex; align-items: center; gap: .5rem;
+      font-size: .75rem; color: var(--muted); }
+    .trust svg { flex-shrink: 0; opacity: .5; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p class="eyebrow">Limited access</p>
+    <h1>Get <em>instant</em> access to the product</h1>
+    <p class="subtext">Enter your details below and you'll be taken to a secure checkout. One-time payment, lifetime access.</p>
+
+    <div class="price-badge">
+      <span class="amount">1.00</span>
+      <span class="currency">BYN</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <form id="checkout-form" novalidate>
+      <div class="field">
+        <label for="name">Your name</label>
+        <input type="text" id="name" name="name" placeholder="Jane Smith" autocomplete="name" required />
+      </div>
+      <div class="field">
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" placeholder="jane@example.com" autocomplete="email" required />
+      </div>
+
+      <button type="submit" class="btn" id="submit-btn">
+        <span class="btn-label">Proceed to payment</span>
+        <svg class="arrow" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M1 7h12M7 1l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="spinner"></div>
+      </button>
+
+      <div class="error-msg" id="error-msg"></div>
+    </form>
+
+    <div class="trust">
+      <svg width="12" height="15" viewBox="0 0 12 15" fill="none">
+        <path d="M6 1L1 3v4c0 3.3 2.1 6.4 5 7 2.9-.6 5-3.7 5-7V3L6 1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+      </svg>
+      Secured by bePaid · SSL encrypted · Safe checkout
+    </div>
+  </div>
+
+  <script>
+    // ← Replace with your deployed Cloudflare Worker URL after wrangler deploy
+    const WORKER_URL = 'https://damp-river-5e4a.samedou-eldar.workers.dev/checkout';
+
+    const form   = document.getElementById('checkout-form');
+    const btn    = document.getElementById('submit-btn');
+    const errEl  = document.getElementById('error-msg');
+
+    const showError  = msg => { errEl.textContent = msg; errEl.classList.add('visible'); };
+    const clearError = ()  => errEl.classList.remove('visible');
+    const setLoading = on  => { btn.disabled = on; btn.classList.toggle('loading', on); };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError();
+
+      const name  = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+
+      if (!name)  return showError('Please enter your name.');
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+        return showError('Please enter a valid email address.');
+
+      setLoading(true);
+
+      try {
+        const res  = await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
+        if (data.redirect_url) {
+          window.location.href = data.redirect_url;
+        } else {
+          throw new Error('No redirect URL received. Please try again.');
+        }
+      } catch (err) {
+        setLoading(false);
+        showError(err.message);
+      }
+    });
+  </script>
+</body>
+</html>
