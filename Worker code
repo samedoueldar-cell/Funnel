@@ -1,0 +1,126 @@
+/**
+ * Cloudflare Worker — bePaid Checkout
+ * Accepts POST { name, email } from frontend and returns redirect_url
+ */
+
+const BEPAID_ENDPOINT = 'https://checkout.bepaid.by/ctp/api/checkouts';
+const NOTIFICATION_URL = 'https://webhook.site/c74e4773-fbf5-4f19-b7f8-ddd8e5202b15';
+
+// Replace these with your actual test/live credentials
+const SHOP_ID = '34505';
+const SECRET_KEY = 'eebeeb05e215331ceb94e34f8ffd4a229dcbef19cdaf49765c64cc0e30223e7c';
+
+// CORS headers
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*', // tighten this in production
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+const jsonResponse = (body, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+  });
+
+export default {
+  async fetch(request) {
+    // Handle preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
+
+    if (request.method !== 'POST') {
+      return new Response('Method Not Allowed', { status: 405, headers: CORS_HEADERS });
+    }
+
+    // Parse JSON body
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return jsonResponse({ error: 'Invalid JSON body.' }, 400);
+    }
+
+    const name = (body.name ?? '').toString().trim();
+    const email = (body.email ?? '').toString().trim().toLowerCase();
+
+    if (!name) return jsonResponse({ error: 'Name is required.' }, 422);
+    if (!email.includes('@')) return jsonResponse({ error: 'A valid email is required.' }, 422);
+
+    // Split first/last name
+    const nameParts = name.split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    // Generate tracking ID
+    const trackingId = `TEST_${Date.now()}_${email}`;
+
+    // Build bePaid payload
+    const payload = {
+      checkout: {
+        test: true, // TEST MODE
+        transaction_type: 'payment',
+        order: {
+          currency: 'BYN',
+          amount: 100, // 1.00 BYN
+          description: 'Digital product — instant access',
+          tracking_id: trackingId,
+        },
+        settings: {
+          success_url: 'https://www.kajabi.com/',
+          fail_url: 'https://www.onliner.by/',
+          decline_url: 'https://www.onliner.by/',
+          notification_url: NOTIFICATION_URL,
+        },
+        customer: {
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+        },
+        billing_address: {
+          first_name: firstName,
+          last_name: lastName,
+        },
+      },
+    };
+
+    // Basic Auth
+    const auth = btoa(`${SHOP_ID}:${SECRET_KEY}`);
+
+    // Call bePaid API
+    let res;
+    try {
+      res = await fetch(BEPAID_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      return jsonResponse({ error: 'Could not reach bePaid API.' }, 502);
+    }
+
+    // Parse response
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      return jsonResponse({ error: 'Invalid response from bePaid.' }, 502);
+    }
+
+    if (!res.ok) {
+      const message = data?.message || 'bePaid API error';
+      return jsonResponse({ error: message }, 502);
+    }
+
+    const redirect_url = data.checkout?.redirect_url;
+    if (!redirect_url) {
+      return jsonResponse({ error: 'bePaid did not return a redirect URL.' }, 502);
+    }
+
+    return jsonResponse({ redirect_url });
+  },
+};
